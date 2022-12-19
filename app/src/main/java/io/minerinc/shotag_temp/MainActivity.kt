@@ -27,6 +27,10 @@ class MainActivity : AppCompatActivity() {
 
 
 
+        ivBack = findViewById(R.id.iv_back)
+        cvTags = findViewById(R.id.cv_tags)
+
+
 
         findViewById<ViewPager2>(R.id.vp_root).apply{
             offscreenPageLimit = 1
@@ -54,6 +58,8 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+    lateinit var cvTags : CardView
+    lateinit var ivBack : ImageView
 
     val adapter = ImageAdapter(listOf(
         R.drawable.ic_demo,
@@ -66,10 +72,10 @@ class MainActivity : AppCompatActivity() {
         enablePagerScroll(it)
     })
     {
-        findViewById<CardView>(R.id.cv_tags).apply {
+        cvTags.apply {
             (if(visibility == View.VISIBLE) View.GONE else View.VISIBLE).let{v->
                 visibility = v
-                findViewById<ImageView>(R.id.iv_back).visibility = v
+                ivBack.visibility = v
             }
 
         }
