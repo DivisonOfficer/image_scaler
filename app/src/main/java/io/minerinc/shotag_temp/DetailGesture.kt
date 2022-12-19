@@ -1,5 +1,6 @@
 package io.minerinc.shotag_temp
 
+import android.annotation.SuppressLint
 import android.graphics.Matrix
 import android.graphics.Point
 import android.util.Log
@@ -8,10 +9,9 @@ import android.view.View
 import android.widget.ImageView
 import androidx.core.graphics.minus
 import androidx.core.graphics.plus
-import java.lang.Math.pow
-import java.lang.Math.sqrt
+import kotlin.math.pow
 
-class DetailGesture(val img : ImageView, val windowWidth : Int, val windowHeight : Int, val bitmapWidth : Int, val bitmapHeight : Int, val nestedEnable : (Boolean) -> Unit, val onSingleTouch : ()->Unit) : View.OnTouchListener {
+class DetailGesture(private val img : ImageView, val windowWidth : Int, val windowHeight : Int, val bitmapWidth : Int, val bitmapHeight : Int, val nestedEnable : (Boolean) -> Unit, val onSingleTouch : ()->Unit) : View.OnTouchListener {
 
 
     private var oldF1 : Point? = null
@@ -39,9 +39,9 @@ class DetailGesture(val img : ImageView, val windowWidth : Int, val windowHeight
 
     private val matrixInfo = FloatArray(9)
 
-    val imageWidth : Int
-    val imageHeight : Int
-    val defaultScale : Float
+    private val imageWidth : Int
+    private val imageHeight : Int
+    private val defaultScale : Float
     init{
         val wRatio = windowWidth.toFloat() / windowHeight.toFloat()
         val bRatio = bitmapWidth.toFloat() / bitmapHeight.toFloat()
@@ -65,14 +65,9 @@ class DetailGesture(val img : ImageView, val windowWidth : Int, val windowHeight
         fitMatrix()
     }
 
-
-
-    var transX = 0f
-    var transY = 0f
-
-
-    override fun onTouch(p0: View?, event: MotionEvent?): Boolean {
-        event?.let{event->
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouch(p0: View?, _event: MotionEvent?): Boolean {
+        _event?.let{event->
             if(event.pointerCount == 2)
                 f2 = Point(event.getX(1).toInt(), event.getY(1).toInt())
 
@@ -144,7 +139,7 @@ class DetailGesture(val img : ImageView, val windowWidth : Int, val windowHeight
         }
 
         scaleOldLen = (f1!! - f2!!).let{
-            sqrt(pow(it.x.toDouble(), 2.0) + pow(it.y.toDouble(),2.0)).toInt()
+            kotlin.math.sqrt(it.x.toDouble().pow(2.0) + it.y.toDouble().pow(2.0)).toInt()
         }
     }
 
@@ -167,30 +162,29 @@ class DetailGesture(val img : ImageView, val windowWidth : Int, val windowHeight
 
 
 
-        fitMatrix(onMove = true)
+        fitMatrix()
     }
 
-    private fun fitMatrix(onMove : Boolean = false){
+    private fun fitMatrix(){
         val scale = matrixInfo[Matrix.MSCALE_X]
-        val xpading = (img.width - getMatrixWidth()).coerceAtLeast(0f) / 2
-        val ypading = (img.height - getMatrixHeight()).coerceAtLeast(0f) / 2
-        Log.i(javaClass.name,"Xpading $xpading Ypading $ypading ${img.height} ${getMatrixHeight()} ${(img.height - imageHeight)}")
-        val xEnd = if(xpading > 0f) xpading else windowWidth * 1 - imageWidth * scale / defaultScale
+        val xPadding = (img.width - getMatrixWidth()).coerceAtLeast(0f) / 2
+        val yPadding = (img.height - getMatrixHeight()).coerceAtLeast(0f) / 2
+        val xEnd = if(xPadding > 0f) xPadding else windowWidth * 1 - imageWidth * scale / defaultScale
 
         if(scale <= defaultScale)
             nestedEnable(true)
 
-        matrixInfo[Matrix.MTRANS_X] = matrixInfo[Matrix.MTRANS_X].coerceAtMost(xpading).coerceAtLeast(xEnd)
+        matrixInfo[Matrix.MTRANS_X] = matrixInfo[Matrix.MTRANS_X].coerceAtMost(xPadding).coerceAtLeast(xEnd)
 
 
 
-        matrixInfo[Matrix.MTRANS_Y] = matrixInfo[Matrix.MTRANS_Y].coerceAtMost(ypading).coerceAtLeast(if(ypading <= 0f) windowHeight - imageHeight * scale / defaultScale else ypading)
+        matrixInfo[Matrix.MTRANS_Y] = matrixInfo[Matrix.MTRANS_Y].coerceAtMost(yPadding).coerceAtLeast(if(yPadding <= 0f) windowHeight - imageHeight * scale / defaultScale else yPadding)
         imgMatrix.setValues(matrixInfo)
         img.imageMatrix = imgMatrix
     }
 
 
-    fun scaleImg()
+    private fun scaleImg()
     {
         f1?:run{
             return
@@ -203,7 +197,7 @@ class DetailGesture(val img : ImageView, val windowWidth : Int, val windowHeight
             setScaleOldLen()
 
         val scaleLen = (f1!! - f2!!).let{
-            sqrt(pow(it.x.toDouble(), 2.0) + pow(it.y.toDouble(),2.0)).toInt()
+            kotlin.math.sqrt(it.x.toDouble().pow(2.0) + it.y.toDouble().pow(2.0)).toInt()
         }
 
         val preScale = scale
