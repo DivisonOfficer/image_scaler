@@ -73,9 +73,10 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
 
             f1 = Point(event.x.toInt(), event.y.toInt())
 
+
             /**
-             * 터치가 중지된 경우 포인터 기록 삭제
-             */
+             * 손가락을 두개 누른 경우 손가락 하나만 필요한 경우와 분리
+              */
             if(event.pointerCount > 1)
                 canMove = false
 
@@ -89,6 +90,10 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
                 return true
             }
 
+
+            /**
+             * 터치가 중지된 경우 포인터 기록 삭제
+             */
             if(event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL)
             {
 
@@ -107,6 +112,10 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
                 return true
             }
 
+            /**
+             * 손가락 하나일떄 : 이미지 이동
+             * 손가락 두개일떄 : 이미지 확대축소
+             */
             if(event.action == MotionEvent.ACTION_MOVE)
             {
                 latePoint = if(event.pointerCount <2) {
@@ -124,11 +133,19 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
         return false
     }
 
+
+    /**
+     * 손을 똇을 시 연산된 scale 정보를 old 값으로 지정하여 저장
+     */
     private fun onDetachScale(){
         oldScale = scale
         scaleOldLen = 0
     }
 
+
+    /**
+     * 처음 onDown 시 터치한 손가락 간격 계산
+     */
     private fun setScaleOldLen()
     {
         f1?:run{
@@ -155,6 +172,11 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
         to?:run{
             return
         }
+
+        /**
+         * 터치 지점의 이동 만큼 현재의 좌표를 변형
+         */
+
         val tx = (to.x - from.x).toFloat()
         val ty = (to.y - from.y).toFloat()
         matrixInfo[Matrix.MTRANS_X] += tx
@@ -166,6 +188,12 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
     }
 
     private fun fitMatrix(){
+
+        /**
+         * 연산한 Matrix 데이터를 보정하여 imageview 에 업로드
+         * x 좌표와 y 좌표를 이미지 패딩과 현재 이미지 확대 상태에 따라 이미지가 화면을 벗어나지 않도록 보정
+         */
+
         val scale = matrixInfo[Matrix.MSCALE_X]
         val xPadding = (img.width - getMatrixWidth()).coerceAtLeast(0f) / 2
         val yPadding = (img.height - getMatrixHeight()).coerceAtLeast(0f) / 2
@@ -201,16 +229,28 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
         }
 
         val preScale = scale
-        scale = (oldScale + (scaleLen - scaleOldLen).toFloat() / img.width.toFloat()).coerceAtLeast(defaultScale).coerceAtMost(defaultScale * 5)
+
+
+        // 처음 터시한 두 손가락의 간극 (scaleOldLen) 과 현재 손가락의 간극 (scaleLen) 의 길이 차이를 현재 scale 값 (oldScale) 에 더하여 새로운 scale 값 지정
+        // oldScale 은 터치를 뗄 시 갱신
+
+        val nextScale = (oldScale + (scaleLen - scaleOldLen).toFloat() / img.width.toFloat() * 1.5f).coerceAtLeast(defaultScale).coerceAtMost(defaultScale * 5)
+
         imgMatrix.getValues(matrixInfo)
-        val x = matrixInfo[Matrix.MTRANS_X]
-        val y = matrixInfo[Matrix.MTRANS_Y]
-        matrixInfo[Matrix.MSCALE_X] = scale
-        matrixInfo[Matrix.MSCALE_Y] = scale
-        val ax = (f1!! + f2!!).x / 2
-        val ay = (f1!! + f2!!).y / 2
-        matrixInfo[Matrix.MTRANS_X] = ax + (x - ax) * scale / preScale
-        matrixInfo[Matrix.MTRANS_Y] = ay + (y - ay) * scale / preScale
+        val prevX = matrixInfo[Matrix.MTRANS_X]
+        val prevY = matrixInfo[Matrix.MTRANS_Y]
+        matrixInfo[Matrix.MSCALE_X] = nextScale
+        matrixInfo[Matrix.MSCALE_Y] = nextScale
+        val pointX = (f1!! + f2!!).x / 2
+        val pointY = (f1!! + f2!!).y / 2
+
+        // 손으로 누르는 곳이 이미지의 동일한 지점을 표시해야 한다. 이때, 터치 좌표는 고정. 즉, 이미지 좌표를 움직여서 보정한다
+        // next state x 포인팅 위치 = previous state x 포인팅 위치
+        // (nextX - pointX) / nextScale = (prevX - pointX) / prevScale
+        matrixInfo[Matrix.MTRANS_X] = pointX + (prevX - pointX) * nextScale / preScale
+        matrixInfo[Matrix.MTRANS_Y] = pointY + (prevY - pointY) * nextScale / preScale
+
+        scale = nextScale
 
         fitMatrix()
 
