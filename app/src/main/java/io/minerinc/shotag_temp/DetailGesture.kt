@@ -97,6 +97,7 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
             if(event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL)
             {
 
+
                 if(event.pointerCount < 2) {
                     (f1!! - oldF1!!).let{
                         if(it.x * it.x + it.y * it.y < 10)
@@ -119,7 +120,9 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
             if(event.action == MotionEvent.ACTION_MOVE)
             {
                 latePoint = if(event.pointerCount <2) {
+                    Log.e(javaClass.name,"SINGLE MOVE DETACHED")
                     moveImg(latePoint,f1)
+                    scaleOldLen = 0
                     f1
                 } else{
                     nestedEnable(false)
@@ -155,8 +158,12 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
             return
         }
 
+        oldScale = scale
+
         scaleOldLen = (f1!! - f2!!).let{
             kotlin.math.sqrt(it.x.toDouble().pow(2.0) + it.y.toDouble().pow(2.0)).toInt()
+        }.apply{
+            Log.e(javaClass.name,"OLDLEN REFRESHED $this")
         }
     }
 
@@ -234,7 +241,7 @@ class DetailGesture(private val img : ImageView, val windowWidth : Int, val wind
         // 처음 터시한 두 손가락의 간극 (scaleOldLen) 과 현재 손가락의 간극 (scaleLen) 의 길이 차이를 현재 scale 값 (oldScale) 에 더하여 새로운 scale 값 지정
         // oldScale 은 터치를 뗄 시 갱신
 
-        val nextScale = (oldScale + (scaleLen - scaleOldLen).toFloat() / img.width.toFloat() * 1.5f).coerceAtLeast(defaultScale).coerceAtMost(defaultScale * 5)
+        val nextScale = (oldScale + (scaleLen - scaleOldLen).toFloat() / img.width.toFloat() * 2.5f).coerceAtLeast(defaultScale).coerceAtMost(defaultScale * 5)
 
         imgMatrix.getValues(matrixInfo)
         val prevX = matrixInfo[Matrix.MTRANS_X]
